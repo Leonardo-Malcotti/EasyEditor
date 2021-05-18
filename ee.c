@@ -29,6 +29,9 @@ ee - Easy Editor
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 
+
+/*--- TERMINAL ---*/
+
 //Struttura contenente i flag originali del terminale
 struct termios orig_termios;
 
@@ -98,21 +101,48 @@ void enableRawMode() {
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) die("tcsetattr");
 }
 
+//Funzione per la lettura di un carattere
+char readKey(){
+  int nread;
+  char c;
+  //attende che venga scritto un carattere
+  while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
+    if (nread == -1 && errno != EAGAIN) die("read");
+  }
+  return c;
+}
+
+/*--- OUT ---*/
+
+
+void clearScreen(){
+
+  write(STDOUT_FILENO, "\x1b[2J", 4);
+  
+}
+
+/*--- IN ---*/
+
+//Legge un carattere e decide che fare
+//
+//  ctrl-q : termina il programma
+//
+void processKey(){
+  char c = readKey();
+
+  switch (c){ 
+    case CTRL_KEY('q'): exit(0); break;
+  }
+}
+
 /*--- MAIN --- */
 
 int main(int argc, char *argv[]){
     enableRawMode();
 
     while(1){
-    char c ='\0';
-
-        if ( read(STDIN_FILENO, &c,1) == -1 && errno != EAGAIN) die("read");
-        if(iscntrl(c)){
-            printf("%d\r\n",c);
-        } else {
-            printf("%d ('%c')\r\n",c,c);
-        }
-        if(c==CTRL_KEY('q')) break;
+      clearScreen();
+      processKey();
     }
      return 0;
 }
